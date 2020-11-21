@@ -34,11 +34,12 @@
 
     for (let i = 0; i < BUILD_TYPES.length; i++) {
       const buildType = BUILD_TYPES[i];
+      const projectName = preferences.projectName.replace( /[\r\n]+/gm, '' ).replace(/(^[\s]+|[\s]+$)/g, '');
       const plist = path.join(
         preferences.projectRoot,
         "platforms",
         "ios",
-        preferences.projectName,
+        projectName,
         `Entitlements-${buildType}.plist`
       );
       files.push(plist);

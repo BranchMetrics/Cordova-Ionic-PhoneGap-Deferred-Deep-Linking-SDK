@@ -12,9 +12,8 @@
 
   // updates the platforms/ios/app.plist file with branch settings within app/config.xml
   function addBranchSettings(preferences) {
-    const filePath = `platforms/ios/${preferences.projectName}/${
-      preferences.projectName
-    }-Info.plist`;
+  	const projectName = preferences.projectName.replace( /[\r\n]+/gm, '' ).replace(/(^[\s]+|[\s]+$)/g, '');
+  	const filePath = `platforms/ios/${projectName}/${projectName}-Info.plist`;
     let xml = readPlist(filePath);
     let obj = convertXmlToObject(xml);
 
