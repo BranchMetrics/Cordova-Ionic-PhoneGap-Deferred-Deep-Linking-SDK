@@ -98,6 +98,14 @@ Branch.prototype.initSession = function initSession() {
   return execute("initSession");
 };
 
+Branch.prototype.initSessionWithCallback = function initSession(onSuccess, onFail) {
+  this.sessionInitialized = true;
+  if (!onSuccess || typeof onSuccess !== "function") {
+    return executeReject("Please set onSuccess callback");
+  }
+  return executeCallback("initSession", onSuccess, [true]);
+};
+
 Branch.prototype.setRequestMetadata = function setRequestMetadata(key, val) {
   if (!key || typeof key !== "string") {
     return executeReject("Please set key");

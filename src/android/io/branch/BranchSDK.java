@@ -52,6 +52,8 @@ public class BranchSDK extends CordovaPlugin {
     private Activity activity;
     private Branch instance;
     private String deepLinkUrl;
+    private CallbackContext initSessionCallbackContext;
+    private boolean initSessionCallbackContextKeepCallback;
 
     /**
      * Class Constructor
@@ -61,7 +63,8 @@ public class BranchSDK extends CordovaPlugin {
         this.activity = null;
         this.instance = null;
         this.branchObjectWrappers = new ArrayList<BranchUniversalObjectWrapper>();
-
+        this.initSessionCallbackContext = null;
+        this.initSessionCallbackContextKeepCallback = false;
     }
 
     /**
@@ -84,6 +87,7 @@ public class BranchSDK extends CordovaPlugin {
     public void onNewIntent(Intent intent) {
         intent.putExtra("branch_force_new_session", true);
         this.activity.setIntent(intent);
+        Branch.sessionBuilder(this.activity).withCallback(branchReferralInitListener).reInit();
     }
 
     /**
@@ -279,7 +283,7 @@ public class BranchSDK extends CordovaPlugin {
      *
      * @param callbackContext A callback to execute at the end of this method
      */
-    private void initSession(CallbackContext callbackContext) {
+    private void initSession(boolean isKeepCallBack, CallbackContext callbackContext) {
 
         this.activity = this.cordova.getActivity();
 
@@ -289,8 +293,34 @@ public class BranchSDK extends CordovaPlugin {
             this.deepLinkUrl = data.toString();
         }
 
-        this.instance.initSession(new SessionListener(callbackContext), data, activity);
+        this.initSessionCallbackContext = callbackContext;
+        this.initSessionCallbackContextKeepCallback = isKeepCallBack;
+
+        Branch.sessionBuilder(activity).withCallback(branchReferralInitListener).withData(data).init();
     }
+
+    private Branch.BranchReferralInitListener branchReferralInitListener = new Branch.BranchReferralInitListener() {
+        @Override
+        public void onInitFinished(JSONObject referringParams, BranchError error) {
+            if (error == null && referringParams != null && initSessionCallbackContext != null) {
+                PluginResult result = new PluginResult(PluginResult.Status.OK, referringParams);
+                if(initSessionCallbackContextKeepCallback){
+                    result.setKeepCallback(true);
+                }
+                initSessionCallbackContext.sendPluginResult(result);
+            } else {
+                JSONObject message = new JSONObject();
+                try {
+                    message.put("error", error.getMessage());
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                if (initSessionCallbackContext != null) {
+                    initSessionCallbackContext.error(message);
+                }
+            }
+        }
+    };
 
     /**
      * <p>This method should be called if you know that a different person is about to use the app. For example,
@@ -618,7 +648,7 @@ public class BranchSDK extends CordovaPlugin {
      */
     private void setDebug(boolean isEnable, CallbackContext callbackContext) {
         this.activity = this.cordova.getActivity();
-        Branch.enableDebugMode();
+        Branch.enableLogging();
         callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, isEnable));
     }
 
@@ -653,7 +683,7 @@ public class BranchSDK extends CordovaPlugin {
     /**
      * <p>Allow Branch SDK to pass the user's Mixpanel distinct id to our servers. Branch will then pass that Distinct ID to Mixpanel when logging any event.</p>
      *
-     * @param token           A {@link String} value containing the unique identifier of the Mixpanel user.
+     * @param key           A {@link String} value containing the unique identifier of the Mixpanel user.
      * @param callbackContext A callback to execute at the end of this method
      */
     private void setRequestMetadata(String key, String val, CallbackContext callbackContext) {
@@ -1423,7 +1453,8 @@ public class BranchSDK extends CordovaPlugin {
                 } else if (this.action.equals("disableTracking")) {
                     disableTracking(this.args.getBoolean(0), this.callbackContext);
                 } else if (this.action.equals("initSession")) {
-                    initSession(this.callbackContext);
+                    boolean keepCallBack = this.args.length() != 0 && this.args.getBoolean(0);
+                    initSession(keepCallBack, this.callbackContext);
                 } else if (this.action.equals("setRequestMetadata")) {
                     setRequestMetadata(this.args.getString(0), this.args.getString(1), this.callbackContext);
                 } else {

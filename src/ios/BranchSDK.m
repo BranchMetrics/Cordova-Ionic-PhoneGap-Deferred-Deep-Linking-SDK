@@ -98,6 +98,7 @@ NSString * const pluginVersion = @"%BRANCH_PLUGIN_VERSION%";
 
     NSString *resultString = nil;
     CDVPluginResult *pluginResult = nil;
+    bool enableCallBack = [[command.arguments objectAtIndex:0] boolValue];
 
     if (!error) {
       if (params != nil && [params count] > 0) {
@@ -130,6 +131,9 @@ NSString * const pluginVersion = @"%BRANCH_PLUGIN_VERSION%";
     }
 
     if (command != nil) {
+      if(enableCallBack){
+        [pluginResult setKeepCallbackAsBool:YES];
+      }
       [self.commandDelegate sendPluginResult: pluginResult callbackId: command.callbackId];
     }
   }];
