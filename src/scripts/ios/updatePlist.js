@@ -101,6 +101,7 @@
     
     obj.branch_app_domain = linkDomains[0];
 
+    obj.IntercomUniversalLinkDomains = preferences.linkDomain;
     return obj;
   }
 
